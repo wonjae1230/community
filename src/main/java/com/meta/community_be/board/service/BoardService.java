@@ -7,8 +7,6 @@ import com.meta.community_be.board.repository.BoardRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
@@ -18,51 +16,39 @@ public class BoardService {
     private final BoardRepository boardRepository;
 
     @Transactional
-    public BoardResponseDto createBoard(@RequestBody BoardRequestDto boardRequestDto) {
-        // RequestDto -> Entity 변환
+    public BoardResponseDto createBoard(BoardRequestDto boardRequestDto) {
         Board newBoard = new Board(boardRequestDto);
         Board savedBoard = boardRepository.save(newBoard);
-        // Entity -> ResponseDto 변환
-        BoardResponseDto boardResponseDto = new BoardResponseDto(savedBoard);
-
-        return boardResponseDto;
+        return new BoardResponseDto(savedBoard);
     }
+
     @Transactional(readOnly = true)
     public List<BoardResponseDto> getBoards() {
-
-        List<BoardResponseDto> BoardResponseDtoList = boardRepository.findAllByOrderByCreatedAtDesc().stream()
+        return boardRepository.findAllByOrderByCreatedAtDesc().stream()
                 .map(BoardResponseDto::new).toList();
-        return BoardResponseDtoList;
-
-        public BoardRequestDto getBoardById(Long id) {
-            Board foundBoard = findBoardById(id);
-        }
     }
 
-    @Transactional
-    public
-
-    @Transactional
-    public BoardResponseDto updateBoard(@PathVariable Long id, @RequestBody BoardRequestDto BoardRequestDto) {
-        // 해당 id의 메모가 존재하는지 확인
+    @Transactional(readOnly = true)
+    public BoardResponseDto getBoardById(Long id) {
         Board foundBoard = findBoardById(id);
-        // 메모 내용 수정
-        foundBoard.update(BoardRequestDto);
         return new BoardResponseDto(foundBoard);
     }
 
     @Transactional
-    public void deleteBoard(@PathVariable Long id) {
-        // 해당 id의 메모가 존재하는지 확인
-        Board foundBoard = getBoardById(id);
+    public BoardResponseDto updateBoard(Long id, BoardRequestDto boardRequestDto) {
+        Board foundBoard = findBoardById(id);
+        foundBoard.update(boardRequestDto);
+        return new BoardResponseDto(foundBoard);
+    }
 
-        // 메모 내용 삭제
+    @Transactional
+    public void deleteBoard(Long id) {
+        Board foundBoard = findBoardById(id);
         boardRepository.delete(foundBoard);
     }
 
-    public BoardResponseDto findBoardById(Long id) {
+    private Board findBoardById(Long id) {
         return boardRepository.findById(id).orElseThrow(() ->
-                new IllegalArgumentException("선택한 id의 메모는 존재하지 않습니다."));
+                new IllegalArgumentException("선택한 id의 게시판은 존재하지 않습니다."));
     }
-
 }
