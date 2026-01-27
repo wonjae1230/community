@@ -6,7 +6,7 @@ plugins {
 
 group = 'com.meta'
 version = '0.0.1-SNAPSHOT'
-description = 'projectbase'
+description = 'community_be'
 
 java {
     toolchain {
