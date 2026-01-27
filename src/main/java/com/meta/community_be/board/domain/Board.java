@@ -1,6 +1,7 @@
 package com.meta.community_be.board.domain;
 
 import com.meta.community_be.article.domain.Article;
+import com.meta.community_be.board.dto.BoardRequestDto;
 import com.meta.community_be.common.domain.TimeStamped;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -21,8 +22,18 @@ public class Board extends TimeStamped {
     private Long id;
 
     @Column(nullable = false)
-    private Long title;
+    private String title;
 
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
    List<Article> articles = new ArrayList<>();
+    private String contents;
+
+    public Board(BoardRequestDto memoRequestDto) {
+        this.title = memoRequestDto.getTitle();
+    }
+
+    public void update(BoardRequestDto memoRequestDto) {
+        this.title = memoRequestDto.getTitle();
+        this.contents = memoRequestDto.getContents();
+    }
 }
