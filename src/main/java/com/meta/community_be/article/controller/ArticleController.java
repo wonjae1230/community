@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/boards/{boardId}/articles")
+@RequestMapping("api/boards/{boardId}/articles")
 @RequiredArgsConstructor
 public class ArticleController {
     private final ArticleService articleService;
@@ -19,25 +19,24 @@ public class ArticleController {
     @PostMapping()
     public ResponseEntity<ArticleResponseDto> createArticle(
             @RequestBody ArticleRequestDto articleRequestDto,
-            @PathVariable Long boardId)
-    {
-
-        ArticleResponseDto articleResponseDto =  articleService.createArticle(articleRequestDto, boardId);
+            @PathVariable Long boardId) {
+        ArticleResponseDto articleResponseDto = articleService.createArticle(articleRequestDto, boardId);
         return ResponseEntity.status(HttpStatus.CREATED).body(articleResponseDto);
     }
 
     @GetMapping()
-    public ResponseEntity <List<ArticleResponseDto>> getArticles() {
-        List <ArticleResponseDto> articleResponseDtoList = articleService.getArticles();
+    public ResponseEntity<List<ArticleResponseDto>> getArticles(
+            @PathVariable Long boardId) {
+        List<ArticleResponseDto> articleResponseDtoList = articleService.getArticles(boardId);
         return ResponseEntity.ok(articleResponseDtoList);
     }
 
     @GetMapping("{id}")
-    public ResponseEntity <ArticleResponseDto> getArticlesById(
+    public ResponseEntity<ArticleResponseDto> getArticleById(
             @PathVariable Long id,
             @PathVariable Long boardId) {
-        ArticleResponseDto articleResponseDtoList = articleService.getArticleById(id, boardId);
-        return ResponseEntity.ok(articleResponseDtoList);
+        ArticleResponseDto articleResponseDto = articleService.getArticleById(id, boardId);
+        return ResponseEntity.ok(articleResponseDto);
     }
 
     @PutMapping("{id}")
@@ -50,12 +49,10 @@ public class ArticleController {
     }
 
     @DeleteMapping("{id}")
-    public ResponseEntity<Void>  deleteArticle(
+    public ResponseEntity<Void> deleteArticle(
             @PathVariable Long id,
             @PathVariable Long boardId) {
         articleService.deleteArticle(id, boardId);
         return ResponseEntity.noContent().build();
     }
 }
-
-
