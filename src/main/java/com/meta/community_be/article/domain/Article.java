@@ -1,5 +1,6 @@
 package com.meta.community_be.article.domain;
 
+import com.meta.community_be.article.dto.ArticleRequestDto;
 import com.meta.community_be.board.domain.Board;
 import com.meta.community_be.common.domain.TimeStamped;
 import jakarta.persistence.*;
@@ -26,6 +27,17 @@ public class Article extends TimeStamped {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "board_id", nullable = false)
     private Board board;
+
+    public Article(ArticleRequestDto articleRequestDto, Board board){
+        this.Title = articleRequestDto.getTitle();
+        this.contents = articleRequestDto.getContents();
+        this.board = board;
+    }
+
+    public void update(ArticleRequestDto articleRequestDto) {
+        this.Title = articleRequestDto.getTitle();
+        this.contents = articleRequestDto.getContents();
+    }
 }
 
 
