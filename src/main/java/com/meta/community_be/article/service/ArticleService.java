@@ -8,21 +8,12 @@ import com.meta.community_be.auth.domain.PrincipalDetails;
 import com.meta.community_be.auth.domain.User;
 import com.meta.community_be.board.domain.Board;
 import com.meta.community_be.board.repository.BoardRepository;
-import com.meta.community_be.comment.domain.Comment;
-import com.meta.community_be.comment.dto.CommentResponseDto;
-import com.meta.community_be.file.service.FileService;
 import com.meta.community_be.likes.articleLike.repository.ArticleLikeRepository;
-import com.meta.community_be.likes.commentLike.domain.CommentLike;
-import com.meta.community_be.likes.commentLike.repository.CommentLikeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -30,23 +21,16 @@ public class ArticleService {
     private final ArticleRepository articleRepository;
     private final BoardRepository boardRepository;
     private final ArticleLikeRepository articleLikeRepository;
-    private final CommentLikeRepository commentLikeRepository;
-    private final FileService fileService;
 
 
     @Transactional
-    public ArticleResponseDto createArticle(ArticleRequestDto articleRequestDto, Long boardId, PrincipalDetails principalDetails, MultipartFile file) {
+    public ArticleResponseDto createArticle(ArticleRequestDto articleRequestDto, Long boardId, PrincipalDetails principalDetails) {
         User logginedUser = principalDetails.user();
         // 해당 id의 게시판이 존재하는지 확인
         Board foundBoard = getValidBoardById(boardId);
         // RequestDto -> Entity 변환
         Article newArticle = new Article(articleRequestDto, foundBoard, logginedUser);
         Article savedArticle = articleRepository.save(newArticle);
-
-        if (file != null && !file.isEmpty()) {
-            fileService.uploadFile(savedArticle, file);
-        }
-
         // Entity -> ResponseDto 변환
         ArticleResponseDto articleResponseDto = new ArticleResponseDto(savedArticle);
         return articleResponseDto;
@@ -62,46 +46,14 @@ public class ArticleService {
     @Transactional(readOnly = true)
     public ArticleResponseDto getArticleById(Long id, Long boardId, PrincipalDetails principalDetails) {
         Article foundArticle = getValidBoardAndArticleById(id, boardId);
-        User logginedUser = principalDetails.user();
 
         int currentLikesCount = (int) articleLikeRepository.countByArticle(foundArticle);
         boolean liked = false;
-        if (logginedUser != null) {
+        if (principalDetails != null) {
+            User logginedUser = principalDetails.user();
             liked = articleLikeRepository.findByArticleAndUser(foundArticle, logginedUser).isPresent();
         }
-
-        List<Comment> comments = foundArticle.getComments();
-        List<CommentResponseDto> commentResponseDtos = new ArrayList<>();
-
-        if (!comments.isEmpty()) {
-            // 1. 이 게시글의 댓글들에 달린 '모든' 좋아요 데이터를 가져오기 (쿼리 1방)
-            List<CommentLike> commentLikes = commentLikeRepository.findAllByCommentIn(comments);
-
-            // 2. 좋아요 개수 계산 (Grouping By Comment ID) -> Map<댓글ID, 개수>
-            Map<Long, Integer> likeCountMap = commentLikes.stream()
-                    .collect(Collectors.groupingBy(
-                            like -> like.getComment().getId(),
-                            Collectors.collectingAndThen(Collectors.counting(), Long::intValue)
-                    ));
-
-            // 3. "내가" 좋아요 누른 댓글 ID 목록 추출 -> Set<댓글ID>
-            Set<Long> myLikedCommentIds = new HashSet<>();
-            if (logginedUser != null) {
-                myLikedCommentIds = commentLikes.stream()
-                        .filter(like -> like.getUser().getId().equals(logginedUser.getId()))
-                        .map(like -> like.getComment().getId())
-                        .collect(Collectors.toSet());
-            }
-
-            for (Comment comment : comments) {
-                int likesCount = likeCountMap.getOrDefault(comment.getId(), 0);
-                boolean isLiked = myLikedCommentIds.contains(comment.getId());
-
-                // CommentResponseDto 생성자
-                commentResponseDtos.add(new CommentResponseDto(comment, likesCount, isLiked));
-            }
-        }
-        ArticleResponseDto articleResponseDto = new ArticleResponseDto(foundArticle, currentLikesCount, liked, commentResponseDtos);
+        ArticleResponseDto articleResponseDto = new ArticleResponseDto(foundArticle, currentLikesCount, liked);
         return articleResponseDto;
     }
 
